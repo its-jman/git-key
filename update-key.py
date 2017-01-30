@@ -188,7 +188,6 @@ def main():
         # Personal Access Token ID, used for removal at the end.
         pat_token_id = ctr_json.get('id')
         update_ssh_key(pat_token, '%s@%s' % (getuser(), gethostname()))
-        sleep(600)
         remove_pat(pat_token_id)
     else:
         errors = ctr_json.get('errors', None)
