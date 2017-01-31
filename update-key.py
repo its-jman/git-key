@@ -4,7 +4,6 @@ import requests
 import subprocess
 
 from os import path
-from time import sleep
 from socket import gethostname
 from getpass import getpass, getuser
 
