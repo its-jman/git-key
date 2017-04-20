@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import sys
+import time
+import json
 import requests
 import subprocess
 
@@ -28,8 +30,6 @@ invalid_credential_messages = [
     'Bad credentials',
     'Must specify two-factor authentication OTP code.'
 ]
-
-client_id = '8c27cf83d50c2d40022e'
 
 
 def get_auth_code():
@@ -81,8 +81,13 @@ def request_url_by_token(access_token, **kwargs):
 
 def update_ssh_key(access_token, ssh_key_name):
     print('\nFinding existing SSH keys on GitHub. ')
-    user_ssh_keys = request_url_by_token(access_token, url='https://api.github.com/user/keys', method_name='GET').json()
+    user_ssh_keys = request_url_by_token(
+        access_token,
+        url='https://api.github.com/user/keys',
+        method_name='GET'
+    ).json()
     print('USER SSH', user_ssh_keys)
+
     old_ssh = list(filter(lambda item: item.get('title') == ssh_key_name, user_ssh_keys))
     # If the key already exists, delete it.
     if len(old_ssh):
@@ -123,48 +128,76 @@ def update_ssh_key(access_token, ssh_key_name):
 
 
 def main():
+    """
+    SECRET -> Create a PAT token for future requests.
+    PAT -> Update SSH key
+    SECRET -> Delete PAT token
+    :return:
+    """
     full_host = '%s@%s' % (getuser(), gethostname())
+
+    # Create PAT for given user.
     response = requests.put(
-        url='https://api.github.com/authorizations/clients/%s/%s' % (client_id, full_host),
+        url='https://api.jman.me/gh/ssh/create-pat',
         json={
-            'client_secret': client_secret,
-            'scopes': ['admin:public_key'],
-            'note': 'SSH for %s' % full_host,
+            'full_host': full_host,
+            'auth_code': get_auth_code(),
+            'user': user,
+            'pass': getpass('Password for [%s]: ' % user)
         },
         headers={
-            'X-GitHub-OTP': get_auth_code()
-        },
-        # Always add the credentials to the request.
-        auth=(user, getpass('Password for [%s]: ' % user))
+            'Content-Type': 'application/json'
+        }
     )
+    pat = json.loads(response.json()).get('pat', None)
 
-    print(response.json())
-    print('token: [%s]' % response.json()['token'])
-    pat_token = response.json()['token']
-    # pat_token = '7a76c4ddddaf78cd2c7f6cff535d5d52465fad5f'
-    # token_id = '79961765'
-
-    sleep(3)
-
-    update_ssh_key(pat_token, '%s@%s' % (getuser(), gethostname()))
-
-    # response = requests.get(
-    #     url='https://api.github.com/user/keys',
-    #     auth=(user, pat_token)
-    # )
-
-    print('resp2', response.json())
+    if pat is None:
+        print('Failure in PAT creation.')
+        return
 
     sleep(3)
 
+    update_ssh_key(pat, '%s@%s' % (getuser(), gethostname()))
+
+    sleep(3)
+
+    # Delete PAT owned by app.
     print('SEDING DELETE')
+    response = requests.delete(
+        url='https://api.jman.me/gh/ssh/delete-pat?pat=%s' % pat,
+    )
+    print(response.text)
+    if response.text != '"204"':
+        print('Failure in delete PAT.')
+
+
+if __name__ == '__main__':
+    main()
+
+
+# Delete PAT owned by app.
+"""
+import requests
+import boto3
+import os
+
+from base64 import b64decode
+
+client_id = decrypt(os.environ['client_id'])
+client_secret = decrypt(os.environ['client_secret'])
+
+
+def decrypt(value):
+    return boto3.client('kms').decrypt(CiphertextBlob=b64decode(value))['Plaintext']
+
+
+def lambda_handler(event, context):
+    pat_token = ''
+
     response = requests.delete(
         url='https://api.github.com/applications/%s/tokens/%s' % (client_id, pat_token),
         auth=(client_id, client_secret)
     )
 
-    print(response.status_code)
-
-
-if __name__ == '__main__':
-    main()
+    return response
+"""
