@@ -23,6 +23,6 @@ def lambda_handler(event, context):
         )
         status = response.status_code
         print(response)
-        print(response.json())
+        print(response.text)
 
     return str(status)
