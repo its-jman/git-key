@@ -86,7 +86,7 @@ def update_ssh_key(access_token, ssh_key_name):
         url='https://api.github.com/user/keys',
         method_name='GET'
     ).json()
-    print('USER SSH', user_ssh_keys)
+    #print('USER SSH', user_ssh_keys)
 
     old_ssh = list(filter(lambda item: item.get('title') == ssh_key_name, user_ssh_keys))
     # If the key already exists, delete it.
