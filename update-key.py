@@ -21,7 +21,7 @@ def get_bool(prompt):
 def get_parameters():
     if len(sys.argv) != 2:
         print(f'Usage: \n\t{__file__} [user]')
-        return sys.exit(1)
+        sys.exit(1)
 
     hostname = '%s@%s' % (getuser(), gethostname())
 
@@ -141,6 +141,8 @@ def create_pat(hostname, uname, pwd):
                 remove_old_pat(uname, pwd, old_pat_id)
 
                 return create_pat(hostname, uname, pwd)
+            else:
+                print(f"Unknown error: {err}")
 
     cbs = {
         201: code_201,
@@ -248,11 +250,12 @@ def update_ssh_key(pat, hostname):
 def main():
     hostname, uname, pwd = get_parameters()
 
-    pat_id, pat = create_pat(hostname, uname, pwd)
-    if pat_id is None or pat is None:
+    pat_resp = create_pat(hostname, uname, pwd)
+    if pat_resp is None:
         print("Failure authenticating")
         return sys.exit(1)
-
+    
+    pat_id, pat = pat_resp
     key_id = update_ssh_key(pat, hostname)
     if key_id is None:
         print("Failed to upload key")
