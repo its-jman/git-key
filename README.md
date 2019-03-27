@@ -1,5 +1,5 @@
 # git-key
-Script to create and upload a local SSH key to your GitHub account (Python, GitHub API)
+Script to create and attach a local SSH key to your GitHub account (Python, GitHub API)
 
 ## Pre-requisites
 
